@@ -13,13 +13,17 @@ Future<void> sendBluetoothCommand(String command) async {
   FlutterBlue flutterBlue = FlutterBlue.instance;
 
   try {
-    // Start scanning for devices
-    flutterBlue.scan(timeout: Duration(seconds: 4)); // Timeout after 4 seconds
+    // Start scanning for devices with a timeout of 4 seconds
+    flutterBlue.startScan(timeout: Duration(seconds: 4));
 
-    // Listen to scan results
+    // Listen to scan results and check for the Raspberry Pi device
+    bool deviceFound = false;
     await for (ScanResult result in flutterBlue.scanResults) {
       if (result.device.name == 'Your_Raspberry_Pi_Name') {
         BluetoothDevice device = result.device;
+
+        // Stop scanning once the device is found
+        flutterBlue.stopScan();
 
         // Connect to the Raspberry Pi device
         await device.connect();
@@ -27,8 +31,9 @@ Future<void> sendBluetoothCommand(String command) async {
 
         // Discover services and characteristics
         List<BluetoothService> services = await device.discoverServices();
-        BluetoothCharacteristic characteristic;
+        BluetoothCharacteristic? characteristic;
 
+        // Find the specific characteristic for lock control
         for (var service in services) {
           for (var char in service.characteristics) {
             if (char.uuid.toString() == 'your-characteristic-uuid') {
@@ -38,6 +43,7 @@ Future<void> sendBluetoothCommand(String command) async {
           }
         }
 
+        // Check if the characteristic was found
         if (characteristic != null) {
           // Send lock/unlock command
           await characteristic.write(command.codeUnits);
@@ -48,8 +54,14 @@ Future<void> sendBluetoothCommand(String command) async {
 
         // Disconnect after the operation
         await device.disconnect();
+        deviceFound = true;
         break;
       }
+    }
+
+    // If no device was found, print a message
+    if (!deviceFound) {
+      print("Raspberry Pi device not found.");
     }
   } catch (e) {
     print("Bluetooth error: $e");
