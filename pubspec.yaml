@@ -78,6 +78,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.0
 
+  # Flutter Blue package for Bluetooth functionality
+  flutter_blue: ^0.9.0  # Ensure this is compatible with your Flutter version
+
 dependency_overrides:
   http: 1.2.2
   uuid: ^4.0.0
