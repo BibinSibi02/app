@@ -19,7 +19,7 @@ Future<void> sendBluetoothCommand(String command) async {
     // Listen to scan results and check for the Raspberry Pi device
     bool deviceFound = false;
     await for (ScanResult result in flutterBlue.scanResults) {
-      if (result.device.name == 'Your_Raspberry_Pi_Name') {
+      if (result.device.name == 'electrolock') {
         BluetoothDevice device = result.device;
 
         // Stop scanning once the device is found
@@ -29,28 +29,12 @@ Future<void> sendBluetoothCommand(String command) async {
         await device.connect();
         print("Connected to Raspberry Pi!");
 
-        // Discover services and characteristics
-        List<BluetoothService> services = await device.discoverServices();
-        BluetoothCharacteristic? characteristic;
+        // Establish an RFCOMM connection (no need for discovering services or characteristics)
+        // Simply send data over the RFCOMM channel
 
-        // Find the specific characteristic for lock control
-        for (var service in services) {
-          for (var char in service.characteristics) {
-            if (char.uuid.toString() == 'your-characteristic-uuid') {
-              characteristic = char;
-              break;
-            }
-          }
-        }
-
-        // Check if the characteristic was found
-        if (characteristic != null) {
-          // Send lock/unlock command
-          await characteristic.write(command.codeUnits);
-          print("$command command sent successfully!");
-        } else {
-          print("Characteristic not found!");
-        }
+        // Send the lock/unlock command as text
+        await device.writeData(command.codeUnits);
+        print("$command command sent successfully!");
 
         // Disconnect after the operation
         await device.disconnect();
