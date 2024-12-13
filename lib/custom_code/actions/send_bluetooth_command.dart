@@ -13,43 +13,39 @@ Future<void> sendBluetoothCommand(String command) async {
   FlutterBlue flutterBlue = FlutterBlue.instance;
 
   try {
-    // Start scanning for devices
-    flutterBlue.scan(timeout: Duration(seconds: 4)); // Timeout after 4 seconds
+    // Start scanning for devices with a timeout of 4 seconds
+    flutterBlue.startScan(timeout: Duration(seconds: 4));
 
-    // Listen to scan results
+    // Listen to scan results and check for the Raspberry Pi device
+    bool deviceFound = false;
     await for (ScanResult result in flutterBlue.scanResults) {
-      if (result.device.name == 'Your_Raspberry_Pi_Name') {
+      if (result.device.name == 'electrolock') {
         BluetoothDevice device = result.device;
+
+        // Stop scanning once the device is found
+        flutterBlue.stopScan();
 
         // Connect to the Raspberry Pi device
         await device.connect();
         print("Connected to Raspberry Pi!");
 
-        // Discover services and characteristics
-        List<BluetoothService> services = await device.discoverServices();
-        BluetoothCharacteristic characteristic;
+        // Establish an RFCOMM connection (no need for discovering services or characteristics)
+        // Simply send data over the RFCOMM channel
 
-        for (var service in services) {
-          for (var char in service.characteristics) {
-            if (char.uuid.toString() == 'your-characteristic-uuid') {
-              characteristic = char;
-              break;
-            }
-          }
-        }
-
-        if (characteristic != null) {
-          // Send lock/unlock command
-          await characteristic.write(command.codeUnits);
-          print("$command command sent successfully!");
-        } else {
-          print("Characteristic not found!");
-        }
+        // Send the lock/unlock command as text
+        await device.writeData(command.codeUnits);
+        print("$command command sent successfully!");
 
         // Disconnect after the operation
         await device.disconnect();
+        deviceFound = true;
         break;
       }
+    }
+
+    // If no device was found, print a message
+    if (!deviceFound) {
+      print("Raspberry Pi device not found.");
     }
   } catch (e) {
     print("Bluetooth error: $e");
